@@ -181,10 +181,9 @@ git push origin --tags
 推送 `v2.0.1` 标签后，工作流会自动创建正式 GitHub Release，并上传：
 
 - Windows 安装包 `.exe`（GitHub 使用兼容自动更新的安全文件名）
-- 差分更新文件 `.blockmap`
 - 客户端版本清单 `latest.yml`
 
-客户端通过这些 Release 文件检测、下载并安装最新版本。GitHub Actions 使用仓库自带的 `GITHUB_TOKEN`，不需要额外配置发布密钥。
+Actions 构建产物中还会保留 `.blockmap` 文件；客户端通过 Release 中的安装包和 `latest.yml` 检测、下载并安装最新版本。GitHub Actions 使用仓库自带的 `GITHUB_TOKEN`，不需要额外配置发布密钥。
 
 ## 项目结构
 
