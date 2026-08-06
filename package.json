@@ -1,7 +1,7 @@
 {
   "name": "ledgerly-account-book",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "description": "支持多项目与多窗口的离线桌面生意记账工作区",
   "main": "electron/main.cjs",

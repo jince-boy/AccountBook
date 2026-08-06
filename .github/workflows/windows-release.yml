@@ -47,15 +47,37 @@ jobs:
       - name: Prepare release metadata
         run: node scripts/prepare-ci-release.cjs
 
-      - name: Package branch build
-        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+      - name: Package Windows installer
         run: npx electron-builder --win nsis --publish never
 
-      - name: Package and publish GitHub Release
+      - name: Publish one complete GitHub Release
         if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx electron-builder --win nsis --publish always
+          GH_HTTP_TIMEOUT: 60
+        run: |
+          $manifestPath = 'release/latest.yml'
+          $manifest = Get-Content -LiteralPath $manifestPath -Encoding utf8 -Raw
+          $safeInstallerName = [regex]::Match($manifest, '(?m)^path:\s*(.+)$').Groups[1].Value.Trim()
+          if (-not $safeInstallerName) { throw 'latest.yml does not contain an installer path.' }
+
+          $installer = Get-ChildItem -LiteralPath 'release' -File -Filter '*.exe' | Select-Object -First 1
+          $blockMap = Get-ChildItem -LiteralPath 'release' -File -Filter '*.exe.blockmap' | Select-Object -First 1
+          if ($null -eq $installer -or $null -eq $blockMap) { throw 'Installer or block map is missing.' }
+
+          $safeInstaller = Join-Path 'release' $safeInstallerName
+          $safeBlockMap = "$safeInstaller.blockmap"
+          Copy-Item -LiteralPath $installer.FullName -Destination $safeInstaller -Force
+          Copy-Item -LiteralPath $blockMap.FullName -Destination $safeBlockMap -Force
+
+          $releaseTags = gh release list --repo $env:GITHUB_REPOSITORY --limit 100 --json tagName | ConvertFrom-Json | ForEach-Object { $_.tagName }
+          if ($releaseTags -contains $env:GITHUB_REF_NAME) {
+            gh release upload $env:GITHUB_REF_NAME $safeInstaller $safeBlockMap $manifestPath --clobber --repo $env:GITHUB_REPOSITORY
+          } else {
+            gh release create $env:GITHUB_REF_NAME $safeInstaller $safeBlockMap $manifestPath --title $env:GITHUB_REF_NAME.TrimStart('v') --generate-notes --repo $env:GITHUB_REPOSITORY
+          }
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub Release upload failed.' }
 
       - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4

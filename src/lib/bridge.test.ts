@@ -79,7 +79,7 @@ describe('多项目浏览器适配层', () => {
     const current = await getUpdateStateBridge()
     const checked = await checkForUpdatesBridge()
     expect(current.ok).toBe(true)
-    expect(current.value).toMatchObject({ currentVersion: '2.0.0', status: 'unavailable' })
+    expect(current.value).toMatchObject({ currentVersion: '2.0.1', status: 'unavailable' })
     expect(checked.value?.message).toContain('浏览器预览模式')
   })
 })
